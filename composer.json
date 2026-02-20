@@ -1,0 +1,47 @@
+{
+    "name": "soleinjast/symfony-markdown-response-bundle",
+    "description": "Serve markdown versions of your HTML pages to AI agents and bots",
+    "type": "symfony-bundle",
+    "license": "MIT",
+    "keywords": ["symfony", "bundle", "markdown", "ai", "agents"],
+    "authors": [
+        {
+            "name": "Mohammad Oveisi",
+            "email": "mohammad.oveisiii@gmail.com"
+        }
+    ],
+    "require": {
+        "php": "^8.2",
+        "symfony/http-kernel": "^6.4|^7.0|^8.0",
+        "symfony/dependency-injection": "^6.4|^7.0|^8.0",
+        "symfony/config": "^6.4|^7.0|^8.0",
+        "league/html-to-markdown": "^5.1"
+    },
+    "require-dev": {
+        "symfony/framework-bundle": "^6.4|^7.0|^8.0",
+        "symfony/cache": "^6.4|^7.0|^8.0",
+        "phpunit/phpunit": "^11.0",
+        "symfony/phpunit-bridge": "^7.0|^8.0",
+        "symfony/http-client": "^8.0",
+        "rector/rector": "^2.3"
+    },
+    "suggest": {
+        "symfony/cache": "For caching converted markdown responses",
+        "symfony/http-client": "Required when using the cloudflare driver"
+    },
+    "autoload": {
+        "psr-4": {
+            "Soleinjast\\SymfonyMarkdownResponseBundle\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Soleinjast\\SymfonyMarkdownResponseBundle\\Tests\\": "tests/"
+        }
+    },
+    "extra": {
+        "symfony": {
+            "require": "^6.4|^7.0|^8.0"
+        }
+    }
+}

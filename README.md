@@ -1,4 +1,4 @@
-# Symfony Markdown Response Bundle
+![Symfony Markdown Response Bundle](https://raw.githubusercontent.com/soleinjast/symfony-markdown-response-bundle/main/art.png)
 
 A Symfony bundle that automatically serves Markdown versions of your HTML pages to AI agents, bots, and any client that requests it. Controllers opt in with a single PHP attribute — the bundle handles detection, conversion, and caching transparently.
 

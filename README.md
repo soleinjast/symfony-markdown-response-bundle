@@ -1,12 +1,16 @@
 ![Symfony Markdown Response Bundle](https://raw.githubusercontent.com/soleinjast/symfony-markdown-response-bundle/main/art.png)
 
-A Symfony bundle that automatically serves Markdown versions of your HTML pages to AI agents, bots, and any client that requests it. Controllers opt in with a single PHP attribute — the bundle handles detection, conversion, and caching transparently.
+<p align="center">
+<a href="https://packagist.org/packages/soleinjast/symfony-markdown-response-bundle"><img src="https://poser.pugx.org/soleinjast/symfony-markdown-response-bundle/v/stable" alt="Latest Stable Version"></a>
+<a href="https://packagist.org/packages/soleinjast/symfony-markdown-response-bundle"><img src="https://poser.pugx.org/soleinjast/symfony-markdown-response-bundle/downloads" alt="Total Downloads"></a>
+<a href="https://php.net"><img src="https://img.shields.io/badge/PHP-8.2%2B-blue" alt="PHP"></a>
+<a href="https://symfony.com"><img src="https://img.shields.io/badge/Symfony-6.4%20%7C%207.x%20%7C%208.x-black" alt="Symfony"></a>
+<a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-green" alt="License: MIT"></a>
+</p>
 
-[![Latest Stable Version](https://poser.pugx.org/soleinjast/symfony-markdown-response-bundle/v/stable)](https://packagist.org/packages/soleinjast/symfony-markdown-response-bundle)
-[![Total Downloads](https://poser.pugx.org/soleinjast/symfony-markdown-response-bundle/downloads)](https://packagist.org/packages/soleinjast/symfony-markdown-response-bundle)
-[![PHP](https://img.shields.io/badge/PHP-8.2%2B-blue)](https://php.net)
-[![Symfony](https://img.shields.io/badge/Symfony-6.4%20%7C%207.x%20%7C%208.x-black)](https://symfony.com)
-[![License: MIT](https://img.shields.io/badge/License-MIT-green)](LICENSE)
+<p align="center">
+A Symfony bundle that automatically serves Markdown versions of your HTML pages to AI agents, bots, and any client that requests it. Controllers opt in with a single PHP attribute — the bundle handles detection, conversion, and caching transparently.
+</p>
 
 ---
 

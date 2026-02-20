@@ -260,4 +260,4 @@ Released under the [MIT License](LICENSE).
 
 ---
 
-<p align="center">Happy coding! 🎉</p>
+Happy coding! 🎉

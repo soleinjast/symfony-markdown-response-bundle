@@ -18,11 +18,6 @@ A Symfony bundle that automatically serves Markdown versions of your HTML pages 
 
 AI assistants (ChatGPT, Claude, Perplexity, etc.) and autonomous agents consume web content better as plain Markdown than as HTML. Stripping navigation, scripts, styles, and markup noise reduces token usage and improves comprehension — without maintaining a separate content pipeline.
 
-This bundle intercepts the Symfony HTTP kernel at two points:
-
-1. **`kernel.request` (priority 100)** — rewrites `.md` URL suffixes to the canonical path before routing, so `/docs/setup.md` resolves to the same controller as `/docs/setup`, and sets a `_wants_markdown` flag on the request.
-2. **`kernel.response` (priority −10)** — converts the HTML response to Markdown when the controller opts in via `#[ProvideMarkdownResponse]` and the client is detected as wanting Markdown.
-
 ---
 
 ## Installation

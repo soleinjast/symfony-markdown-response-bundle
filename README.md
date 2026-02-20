@@ -2,6 +2,8 @@
 
 A Symfony bundle that automatically serves Markdown versions of your HTML pages to AI agents, bots, and any client that requests it. Controllers opt in with a single PHP attribute — the bundle handles detection, conversion, and caching transparently.
 
+[![Latest Stable Version](https://poser.pugx.org/soleinjast/symfony-markdown-response-bundle/v/stable)](https://packagist.org/packages/soleinjast/symfony-markdown-response-bundle)
+[![Total Downloads](https://poser.pugx.org/soleinjast/symfony-markdown-response-bundle/downloads)](https://packagist.org/packages/soleinjast/symfony-markdown-response-bundle)
 [![PHP](https://img.shields.io/badge/PHP-8.2%2B-blue)](https://php.net)
 [![Symfony](https://img.shields.io/badge/Symfony-6.4%20%7C%207.x%20%7C%208.x-black)](https://symfony.com)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green)](LICENSE)

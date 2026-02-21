@@ -48,6 +48,12 @@ class MarkdownResponsePass implements CompilerPassInterface
 
     private function resolveDefaultCachePool(ContainerBuilder $container): ?string
     {
-        return array_find(['cache.app', 'cache.system'], fn($candidate) => $container->has($candidate));
+        foreach (['cache.app', 'cache.system'] as $candidate) {
+            if ($container->has($candidate)) {
+                return $candidate;
+            }
+        }
+
+        return null;
     }
 }

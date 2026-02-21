@@ -28,8 +28,6 @@ class MarkdownResponsePass implements CompilerPassInterface
             default      => LocalConverter::class,
         };
 
-//        dd($driverServiceId);
-
         $container->setAlias('symfony_markdown_response.driver', $driverServiceId);
     }
 
@@ -50,12 +48,6 @@ class MarkdownResponsePass implements CompilerPassInterface
 
     private function resolveDefaultCachePool(ContainerBuilder $container): ?string
     {
-        foreach (['cache.app', 'cache.system'] as $candidate) {
-            if ($container->has($candidate)) {
-                return $candidate;
-            }
-        }
-
-        return null;
+        return array_find(['cache.app', 'cache.system'], fn($candidate) => $container->has($candidate));
     }
 }

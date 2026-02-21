@@ -6,9 +6,9 @@ namespace Soleinjast\SymfonyMarkdownResponseBundle\Converter;
 
 use League\HTMLToMarkdown\HtmlConverter;
 
-class LocalConverter implements ConverterInterface
+readonly class LocalConverter implements ConverterInterface
 {
-    private readonly HtmlConverter $converter;
+    private HtmlConverter $converter;
     public function __construct()
     {
         $this->converter = new HtmlConverter([

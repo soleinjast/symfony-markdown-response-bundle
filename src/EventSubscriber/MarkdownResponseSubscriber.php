@@ -9,13 +9,15 @@ use Soleinjast\SymfonyMarkdownResponseBundle\AgentDetector;
 use Soleinjast\SymfonyMarkdownResponseBundle\Attribute\ProvideMarkdownResponse;
 use Soleinjast\SymfonyMarkdownResponseBundle\Converter\MarkdownConverter;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
-use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Event\RequestEvent;
 use Symfony\Component\HttpKernel\Event\ResponseEvent;
 use Symfony\Component\HttpKernel\KernelEvents;
 
 readonly class MarkdownResponseSubscriber implements EventSubscriberInterface
 {
+    /** Headers that describe the original HTML body and become wrong once it is replaced. */
+    private const BODY_SPECIFIC_HEADERS = ['Content-Length', 'ETag', 'Content-MD5'];
+
     public function __construct(
         private MarkdownConverter $converter,
         private AgentDetector     $detector,
@@ -78,11 +80,14 @@ readonly class MarkdownResponseSubscriber implements EventSubscriberInterface
             return;
         }
 
-        $event->setResponse(new Response(
-            $this->converter->convert($html),
-            $response->getStatusCode(),
-            ['Content-Type' => 'text/markdown; charset=UTF-8'],
-        ));
+        // Mutate the existing response so headers set by the controller or
+        // other listeners (Set-Cookie, Cache-Control, Location, security
+        // headers...) survive. Only headers describing the HTML body are reset.
+        $response->setContent($this->converter->convert($html));
+        $response->headers->set('Content-Type', 'text/markdown; charset=UTF-8');
+        foreach (self::BODY_SPECIFIC_HEADERS as $header) {
+            $response->headers->remove($header);
+        }
     }
 
     private function isMarkdownEnabled(ResponseEvent $event): bool

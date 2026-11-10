@@ -11,6 +11,7 @@ use Soleinjast\SymfonyMarkdownResponseBundle\Attribute\ProvideMarkdownResponse;
 use Soleinjast\SymfonyMarkdownResponseBundle\Converter\MarkdownConverter;
 use Soleinjast\SymfonyMarkdownResponseBundle\EventSubscriber\MarkdownResponseSubscriber;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
+use Symfony\Component\HttpFoundation\Cookie;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Event\RequestEvent;
@@ -252,6 +253,80 @@ class MarkdownResponseSubscriberTest extends TestCase
         $this->subscriber->onKernelResponse($event);
 
         self::assertSame(201, $event->getResponse()->getStatusCode());
+    }
+
+    public function testPreservesControllerHeadersOnConvertedResponse(): void
+    {
+        $this->detector->method('wantsMarkdown')->willReturn(true);
+        $this->converter->method('convert')->willReturn('Hello');
+
+        $original = new Response('<p>Hello</p>', 200, [
+            'Content-Type'            => 'text/html',
+            'Cache-Control'           => 'public, max-age=600',
+            'X-Frame-Options'         => 'DENY',
+            'Content-Security-Policy' => "default-src 'self'",
+            'Content-Language'        => 'en',
+        ]);
+        $original->headers->setCookie(Cookie::create('session', 'abc123'));
+
+        $event = $this->createResponseEvent(
+            $original,
+            $this->requestWithController(AnnotatedController::class . '::annotatedAction'),
+        );
+
+        $this->subscriber->onKernelResponse($event);
+
+        $headers = $event->getResponse()->headers;
+        self::assertTrue($headers->hasCacheControlDirective('public'));
+        self::assertSame('600', $headers->getCacheControlDirective('max-age'));
+        self::assertSame('DENY', $headers->get('X-Frame-Options'));
+        self::assertSame("default-src 'self'", $headers->get('Content-Security-Policy'));
+        self::assertSame('en', $headers->get('Content-Language'));
+
+        $cookies = $headers->getCookies();
+        self::assertCount(1, $cookies);
+        self::assertSame('session', $cookies[0]->getName());
+        self::assertSame('abc123', $cookies[0]->getValue());
+    }
+
+    public function testPreservesRedirectLocationOnConvertedResponse(): void
+    {
+        $this->detector->method('wantsMarkdown')->willReturn(true);
+        $this->converter->method('convert')->willReturn('Moved');
+
+        $event = $this->createResponseEvent(
+            new Response('<p>Moved</p>', 302, ['Content-Type' => 'text/html', 'Location' => '/new-place']),
+            $this->requestWithController(AnnotatedController::class . '::annotatedAction'),
+        );
+
+        $this->subscriber->onKernelResponse($event);
+
+        self::assertSame(302, $event->getResponse()->getStatusCode());
+        self::assertSame('/new-place', $event->getResponse()->headers->get('Location'));
+    }
+
+    public function testRemovesHeadersDescribingTheOriginalHtmlBody(): void
+    {
+        $this->detector->method('wantsMarkdown')->willReturn(true);
+        $this->converter->method('convert')->willReturn('Hello');
+
+        $event = $this->createResponseEvent(
+            new Response('<p>Hello</p>', 200, [
+                'Content-Type'   => 'text/html',
+                'Content-Length' => '12',
+                'ETag'           => '"html-etag"',
+                'Content-MD5'    => 'Q2hlY2sgSW50ZWdyaXR5IQ==',
+            ]),
+            $this->requestWithController(AnnotatedController::class . '::annotatedAction'),
+        );
+
+        $this->subscriber->onKernelResponse($event);
+
+        $headers = $event->getResponse()->headers;
+        self::assertFalse($headers->has('Content-Length'));
+        self::assertFalse($headers->has('ETag'));
+        self::assertFalse($headers->has('Content-MD5'));
+        self::assertSame('text/markdown; charset=UTF-8', $headers->get('Content-Type'));
     }
 
     public function testSkipsEmptyResponseContent(): void

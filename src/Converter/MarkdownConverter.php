@@ -25,8 +25,9 @@ readonly class MarkdownConverter
             $key  = 'symfony_markdown_response_' . hash('xxh3', $html);
             $item = $this->cache->getItem($key);
 
-            if ($item->isHit()) {
-                return (string) $item->get();
+            $cached = $item->get();
+            if ($item->isHit() && is_string($cached)) {
+                return $cached;
             }
 
             $markdown = $this->driver->convert($html);

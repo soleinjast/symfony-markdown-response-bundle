@@ -218,7 +218,7 @@ class MarkdownResponseSubscriberTest extends TestCase
 
         $response = $event->getResponse();
         self::assertSame($markdown, $response->getContent());
-        self::assertStringContainsString('text/markdown', $response->headers->get('Content-Type'));
+        self::assertStringContainsString('text/markdown', (string) $response->headers->get('Content-Type'));
     }
 
     public function testSetsCorrectContentTypeOnConvertedResponse(): void

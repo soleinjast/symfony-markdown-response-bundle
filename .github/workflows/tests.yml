@@ -6,6 +6,13 @@ on:
   pull_request:
     branches: [ main ]
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
 jobs:
   tests:
     name: PHP ${{ matrix.php }} — Symfony ${{ matrix.symfony }} — ${{ matrix.os }}
@@ -14,9 +21,15 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ ubuntu-22.04, windows-latest ]
-        php: [ "8.2", "8.3", "8.4" ]
-        symfony: [ "6.4.*", "7.2.*" ]
+        os: [ ubuntu-latest, windows-latest ]
+        php: [ "8.2", "8.3", "8.4", "8.5" ]
+        symfony: [ "6.4.*", "7.4.*", "8.1.*" ]
+        exclude:
+          # Symfony 8 requires PHP >= 8.4
+          - php: "8.2"
+            symfony: "8.1.*"
+          - php: "8.3"
+            symfony: "8.1.*"
 
     steps:
       - name: Checkout
@@ -30,10 +43,58 @@ jobs:
           tools: composer:v2
 
       - name: Pin Symfony version
-        run: composer require "symfony/http-kernel:${{ matrix.symfony }}" "symfony/dependency-injection:${{ matrix.symfony }}" "symfony/config:${{ matrix.symfony }}" "symfony/framework-bundle:${{ matrix.symfony }}" "symfony/cache:${{ matrix.symfony }}" --no-update
+        run: composer require "symfony/http-kernel:${{ matrix.symfony }}" "symfony/dependency-injection:${{ matrix.symfony }}" "symfony/config:${{ matrix.symfony }}" "symfony/framework-bundle:${{ matrix.symfony }}" "symfony/cache:${{ matrix.symfony }}" "symfony/http-client:${{ matrix.symfony }}" --no-update
+
+      - name: Install dependencies
+        run: composer update --prefer-dist --no-progress --no-interaction
+
+      - name: Run tests
+        run: php vendor/bin/phpunit
+
+  lowest:
+    name: PHP 8.2 — lowest dependencies
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.2"
+          coverage: none
+          tools: composer:v2
+
+      - name: Install lowest dependencies
+        run: composer update --prefer-lowest --prefer-stable --prefer-dist --no-progress --no-interaction
+
+      - name: Run tests
+        run: php vendor/bin/phpunit
+
+  static-analysis:
+    name: Static analysis
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.4"
+          coverage: none
+          tools: composer:v2
+
+      - name: Validate composer.json
+        run: composer validate --strict
 
       - name: Install dependencies
         run: composer install --prefer-dist --no-progress --no-interaction
 
-      - name: Run tests
-        run: php vendor/bin/phpunit
+      - name: PHPStan
+        run: vendor/bin/phpstan analyse --no-progress --error-format=github
+
+      - name: Rector
+        run: vendor/bin/rector process --dry-run --no-progress-bar

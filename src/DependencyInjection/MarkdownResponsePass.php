@@ -37,8 +37,10 @@ class MarkdownResponsePass implements CompilerPassInterface
             return;
         }
 
-        $cacheServiceId = $container->getParameter('symfony_markdown_response.cache_service')
-            ?? $this->resolveDefaultCachePool($container);
+        $configuredService = $container->getParameter('symfony_markdown_response.cache_service');
+        $cacheServiceId    = is_string($configuredService)
+            ? $configuredService
+            : $this->resolveDefaultCachePool($container);
 
         if ($cacheServiceId !== null && $container->has($cacheServiceId)) {
             $container->getDefinition(MarkdownConverter::class)

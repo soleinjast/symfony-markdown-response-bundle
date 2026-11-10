@@ -65,6 +65,7 @@ class AgentDetectorTest extends TestCase
         self::assertTrue($this->detector->wantsMarkdown($request));
     }
 
+    /** @return array<string, array{string}> */
     public static function aiUserAgentProvider(): array
     {
         return [

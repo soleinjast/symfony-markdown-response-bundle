@@ -13,6 +13,7 @@ use Soleinjast\SymfonyMarkdownResponseBundle\DependencyInjection\MarkdownRespons
 use Symfony\Component\DependencyInjection\Compiler\CompilerPassInterface;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Definition;
+use Symfony\Component\DependencyInjection\Reference;
 
 class MarkdownResponsePassTest extends TestCase
 {
@@ -98,7 +99,7 @@ class MarkdownResponsePassTest extends TestCase
         $def      = $this->container->getDefinition(MarkdownConverter::class);
         $cacheArg = $def->getArgument('$cache');
 
-        self::assertNotNull($cacheArg);
+        self::assertInstanceOf(Reference::class, $cacheArg);
         self::assertSame('cache.custom', (string) $cacheArg);
     }
 
@@ -116,7 +117,7 @@ class MarkdownResponsePassTest extends TestCase
         $def      = $this->container->getDefinition(MarkdownConverter::class);
         $cacheArg = $def->getArgument('$cache');
 
-        self::assertNotNull($cacheArg);
+        self::assertInstanceOf(Reference::class, $cacheArg);
         self::assertSame('cache.app', (string) $cacheArg);
     }
 
@@ -134,7 +135,7 @@ class MarkdownResponsePassTest extends TestCase
         $def      = $this->container->getDefinition(MarkdownConverter::class);
         $cacheArg = $def->getArgument('$cache');
 
-        self::assertNotNull($cacheArg);
+        self::assertInstanceOf(Reference::class, $cacheArg);
         self::assertSame('cache.system', (string) $cacheArg);
     }
 
@@ -168,6 +169,7 @@ class MarkdownResponsePassTest extends TestCase
         $def      = $this->container->getDefinition(MarkdownConverter::class);
         $cacheArg = $def->getArgument('$cache');
 
+        self::assertInstanceOf(Reference::class, $cacheArg);
         self::assertSame('cache.app', (string) $cacheArg);
     }
 }

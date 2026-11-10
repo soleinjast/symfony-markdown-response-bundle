@@ -23,7 +23,10 @@
         "phpunit/phpunit": "^11.0",
         "symfony/phpunit-bridge": "^7.0|^8.0",
         "symfony/http-client": "^6.4|^7.0|^8.0",
-        "rector/rector": "^2.3"
+        "rector/rector": "^2.3",
+        "phpstan/phpstan": "^2.3",
+        "phpstan/phpstan-phpunit": "^2.1",
+        "phpstan/phpstan-symfony": "^2.1"
     },
     "suggest": {
         "symfony/cache": "For caching converted markdown responses",
@@ -38,6 +41,17 @@
         "psr-4": {
             "Soleinjast\\SymfonyMarkdownResponseBundle\\Tests\\": "tests/"
         }
+    },
+    "scripts": {
+        "test": "phpunit",
+        "phpstan": "phpstan analyse",
+        "rector": "rector process --dry-run",
+        "rector:fix": "rector process",
+        "ci": [
+            "@phpstan",
+            "@rector",
+            "@test"
+        ]
     },
     "extra": {
         "symfony": {

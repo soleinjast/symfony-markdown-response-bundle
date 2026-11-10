@@ -51,10 +51,10 @@ class CloudflareConverterTest extends TestCase
             ->with(
                 'POST',
                 'https://example.com/convert',
-                self::callback(static fn(array $options): bool => isset($options['json']['html'])
-                    && $options['json']['html'] === $html
-                    && isset($options['headers']['Accept'])
-                    && $options['headers']['Accept'] === 'text/plain'),
+                self::callback(static fn(array $options): bool => is_array($options['json'] ?? null)
+                    && ($options['json']['html'] ?? null) === $html
+                    && is_array($options['headers'] ?? null)
+                    && ($options['headers']['Accept'] ?? null) === 'text/plain'),
             )
             ->willReturn($response);
 
@@ -108,8 +108,8 @@ class CloudflareConverterTest extends TestCase
             ->expects(self::once())
             ->method('request')
             ->with('POST', self::anything(), self::callback(static fn(array $options): bool => array_key_exists('json', $options)
-                && array_key_exists('headers', $options)
-                && $options['headers']['Accept'] === 'text/plain'))
+                && is_array($options['headers'] ?? null)
+                && ($options['headers']['Accept'] ?? null) === 'text/plain'))
             ->willReturn($response);
 
         $converter = new CloudflareConverter($this->httpClient, 'https://example.com/convert');

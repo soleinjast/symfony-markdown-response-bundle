@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Soleinjast\SymfonyMarkdownResponseBundle\EventSubscriber;
 
-use ReflectionException;
 use ReflectionClass;
 use Soleinjast\SymfonyMarkdownResponseBundle\AgentDetector;
 use Soleinjast\SymfonyMarkdownResponseBundle\Attribute\ProvideMarkdownResponse;
@@ -100,35 +99,42 @@ readonly class MarkdownResponseSubscriber implements EventSubscriberInterface
             return false;
         }
 
-        try {
-            $reflectionClass = new ReflectionClass($class);
-        } catch (ReflectionException) {
+        if (! class_exists($class)) {
             return false;
         }
+
+        $reflectionClass = new ReflectionClass($class);
 
         $classAttrs   = $reflectionClass->getAttributes(ProvideMarkdownResponse::class);
         $classEnabled = $classAttrs === [] ? null : $classAttrs[0]->newInstance()->enabled;
 
         $methodEnabled = null;
-        if ($method !== null) {
-            try {
-                $methodAttrs = $reflectionClass->getMethod($method)->getAttributes(ProvideMarkdownResponse::class);
-                if (! empty($methodAttrs)) {
-                    $methodEnabled = $methodAttrs[0]->newInstance()->enabled;
-                }
-            } catch (ReflectionException) {
+        if ($method !== null && $reflectionClass->hasMethod($method)) {
+            $methodAttrs = $reflectionClass->getMethod($method)->getAttributes(ProvideMarkdownResponse::class);
+            if ($methodAttrs !== []) {
+                $methodEnabled = $methodAttrs[0]->newInstance()->enabled;
             }
         }
 
         return $methodEnabled ?? $classEnabled ?? false;
     }
 
-    /** @return array{0: class-string|null, 1: string|null} */
+    /**
+     * @param string|array<mixed> $controller
+     * @return array{0: string|null, 1: string|null}
+     */
     private function resolveControllerCallable(string|array $controller): array
     {
         if (is_array($controller)) {
-            $class = is_object($controller[0]) ? $controller[0]::class : $controller[0];
-            return [$class, $controller[1] ?? null];
+            $target = $controller[0] ?? null;
+            $class  = match (true) {
+                is_object($target) => $target::class,
+                is_string($target) => $target,
+                default            => null,
+            };
+            $method = $controller[1] ?? null;
+
+            return [$class, is_string($method) ? $method : null];
         }
 
         if (str_contains($controller, '::')) {

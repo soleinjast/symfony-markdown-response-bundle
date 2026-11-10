@@ -15,6 +15,7 @@ class SymfonyMarkdownResponseExtension extends Extension
     public function load(array $configs, ContainerBuilder $container): void
     {
         $configuration = new Configuration();
+        /** @var array{driver: string, cloudflare_endpoint: string|null, cache_enabled: bool, cache_ttl: int, cache_service: string|null, ai_user_agents: list<string>} $config */
         $config        = $this->processConfiguration($configuration, $configs);
 
         $loader = new PhpFileLoader($container, new FileLocator(__DIR__ . '/../config'));

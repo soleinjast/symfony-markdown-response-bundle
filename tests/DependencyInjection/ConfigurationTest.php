@@ -135,8 +135,13 @@ class ConfigurationTest extends TestCase
         self::assertFalse($config['cache_enabled']);
     }
 
+    /**
+     * @param array<string, mixed> $config
+     * @return array{driver: string, cloudflare_endpoint: string|null, cache_enabled: bool, cache_ttl: int, cache_service: string|null, ai_user_agents: list<string>}
+     */
     private function processConfig(array $config): array
     {
+        /** @var array{driver: string, cloudflare_endpoint: string|null, cache_enabled: bool, cache_ttl: int, cache_service: string|null, ai_user_agents: list<string>} */
         return $this->processor->processConfiguration($this->configuration, [$config]);
     }
 }

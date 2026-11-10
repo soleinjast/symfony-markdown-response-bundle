@@ -34,6 +34,35 @@ class AgentDetectorTest extends TestCase
         self::assertTrue($this->detector->wantsMarkdown($request));
     }
 
+    #[DataProvider('acceptHeaderProvider')]
+    public function testAcceptHeaderRespectsQualityValues(string $accept, bool $expected): void
+    {
+        $request = Request::create('/page');
+        $request->headers->set('Accept', $accept);
+
+        self::assertSame($expected, $this->detector->wantsMarkdown($request));
+    }
+
+    /** @return array<string, array{string, bool}> */
+    public static function acceptHeaderProvider(): array
+    {
+        return [
+            'markdown only'                    => ['text/markdown', true],
+            'markdown with params'             => ['text/markdown; charset=UTF-8', true],
+            'markdown uppercase'               => ['TEXT/MARKDOWN', true],
+            'markdown explicitly refused'      => ['text/markdown;q=0', false],
+            'markdown refused, html wanted'    => ['text/html, text/markdown;q=0', false],
+            'html preferred over markdown'     => ['text/html, text/markdown;q=0.5', false],
+            'markdown preferred over html'     => ['text/markdown, text/html;q=0.9', true],
+            'markdown and html equal'          => ['text/html, text/markdown', true],
+            'markdown with low q, no html'     => ['text/markdown;q=0.1, */*;q=0.8', true],
+            'browser default'                  => ['text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8', false],
+            'wildcard only'                    => ['*/*', false],
+            'text wildcard only'               => ['text/*', false],
+            'markdown-like but different type' => ['text/x-markdown-ish', false],
+        ];
+    }
+
     public function testDoesNotWantMarkdownWithHtmlAcceptHeader(): void
     {
         $request = Request::create('/page');

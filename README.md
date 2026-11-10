@@ -80,10 +80,12 @@ A request is considered to want Markdown if **any** of the following is true:
 
 | Signal | Example |
 |---|---|
-| `Accept: text/markdown` header | `Accept: text/markdown, */*` |
+| `Accept` header prefers `text/markdown` | `Accept: text/markdown, */*` |
 | `.md` URL suffix | `GET /docs/setup.md` |
 | Known AI User-Agent substring | `User-Agent: GPTBot/1.0` |
 | `_wants_markdown` request attribute | Set internally after `.md` rewrite |
+
+The `Accept` header honours quality values: Markdown is served only when `text/markdown` has a `q` above 0 and at least as high as `text/html`. For example, `text/html, text/markdown;q=0.5` gets HTML and `text/markdown;q=0` never gets Markdown. Wildcards such as `*/*` do not count as asking for Markdown.
 
 The `.md` suffix is stripped before routing so your route definitions remain unchanged. The `_wants_markdown` attribute is set on the request to carry the intent forward to the response phase.
 

@@ -329,6 +329,84 @@ class MarkdownResponseSubscriberTest extends TestCase
         self::assertSame('text/markdown; charset=UTF-8', $headers->get('Content-Type'));
     }
 
+    public function testAddsVaryHeaderToMarkdownResponse(): void
+    {
+        $this->detector->method('wantsMarkdown')->willReturn(true);
+        $this->converter->method('convert')->willReturn('Hello');
+
+        $event = $this->createResponseEvent(
+            new Response('<p>Hello</p>', 200, ['Content-Type' => 'text/html']),
+            $this->requestWithController(AnnotatedController::class . '::annotatedAction'),
+        );
+
+        $this->subscriber->onKernelResponse($event);
+
+        self::assertSame(['Accept', 'User-Agent'], $event->getResponse()->getVary());
+    }
+
+    public function testAddsVaryHeaderToHtmlResponseOfOptedInRoute(): void
+    {
+        $this->detector->method('wantsMarkdown')->willReturn(false);
+        $this->converter->expects(self::never())->method('convert');
+
+        $event = $this->createResponseEvent(
+            new Response('<p>Hello</p>', 200, ['Content-Type' => 'text/html']),
+            $this->requestWithController(AnnotatedController::class . '::annotatedAction'),
+        );
+
+        $this->subscriber->onKernelResponse($event);
+
+        self::assertSame('<p>Hello</p>', $event->getResponse()->getContent());
+        self::assertSame(['Accept', 'User-Agent'], $event->getResponse()->getVary());
+    }
+
+    public function testDoesNotAddVaryHeaderToRouteThatDidNotOptIn(): void
+    {
+        $this->detector->method('wantsMarkdown')->willReturn(true);
+
+        $event = $this->createResponseEvent(
+            new Response('<p>Hello</p>', 200, ['Content-Type' => 'text/html']),
+            $this->requestWithController(UnannotatedController::class . '::action'),
+        );
+
+        $this->subscriber->onKernelResponse($event);
+
+        self::assertFalse($event->getResponse()->headers->has('Vary'));
+    }
+
+    public function testDoesNotAddVaryHeaderForMdSuffixRequests(): void
+    {
+        $this->detector->method('wantsMarkdown')->willReturn(true);
+        $this->converter->method('convert')->willReturn('Hello');
+
+        $request = $this->requestWithController(AnnotatedController::class . '::annotatedAction');
+        $request->attributes->set('_wants_markdown', true);
+
+        $event = $this->createResponseEvent(
+            new Response('<p>Hello</p>', 200, ['Content-Type' => 'text/html']),
+            $request,
+        );
+
+        $this->subscriber->onKernelResponse($event);
+
+        self::assertSame('Hello', $event->getResponse()->getContent());
+        self::assertFalse($event->getResponse()->headers->has('Vary'));
+    }
+
+    public function testMergesWithExistingVaryHeaderWithoutDuplicates(): void
+    {
+        $this->detector->method('wantsMarkdown')->willReturn(false);
+
+        $event = $this->createResponseEvent(
+            new Response('<p>Hello</p>', 200, ['Content-Type' => 'text/html', 'Vary' => 'Accept-Encoding, accept']),
+            $this->requestWithController(AnnotatedController::class . '::annotatedAction'),
+        );
+
+        $this->subscriber->onKernelResponse($event);
+
+        self::assertSame(['Accept-Encoding', 'accept', 'User-Agent'], $event->getResponse()->getVary());
+    }
+
     public function testSkipsEmptyResponseContent(): void
     {
         $this->detector->method('wantsMarkdown')->willReturn(true);

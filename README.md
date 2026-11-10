@@ -166,6 +166,12 @@ symfony_markdown_response:
     cache_enabled: false
 ```
 
+### HTTP caches and CDNs
+
+Because the same URL can return HTML or Markdown depending on the `Accept` and `User-Agent` request headers, responses from opted-in controllers carry `Vary: Accept, User-Agent` (merged with any existing `Vary` values). This stops shared caches such as Varnish or Symfony's HttpCache from serving the Markdown variant to browsers, or the HTML variant to agents. Requests using the `.md` suffix are not affected, since their URL is already distinct.
+
+Some CDNs ignore `Vary` for HTML responses (Cloudflare, for example). If you cache pages at the edge, either bypass the cache for AI user agents and `Accept: text/markdown` requests, or point agents to the `.md` URLs.
+
 ---
 
 ## Preprocessing Pipeline

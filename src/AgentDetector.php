@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Soleinjast\SymfonyMarkdownResponseBundle;
 
+use Symfony\Component\HttpFoundation\AcceptHeader;
 use Symfony\Component\HttpFoundation\Request;
 
 readonly class AgentDetector
@@ -23,7 +24,21 @@ readonly class AgentDetector
 
     private function hasMarkdownAcceptHeader(Request $request): bool
     {
-        return str_contains((string) $request->headers->get('Accept', ''), 'text/markdown');
+        $accept   = AcceptHeader::fromString($request->headers->get('Accept'));
+        $markdown = $this->qualityOf($accept, 'text/markdown');
+
+        return $markdown > 0 && $markdown >= $this->qualityOf($accept, 'text/html');
+    }
+
+    private function qualityOf(AcceptHeader $accept, string $mediaType): float
+    {
+        foreach ($accept->all() as $item) {
+            if (strtolower($item->getValue()) === $mediaType) {
+                return $item->getQuality();
+            }
+        }
+
+        return 0.0;
     }
 
     private function hasMarkdownUrlSuffix(Request $request): bool

@@ -15,7 +15,7 @@ class SymfonyMarkdownResponseExtension extends Extension
     public function load(array $configs, ContainerBuilder $container): void
     {
         $configuration = new Configuration();
-        /** @var array{driver: string, cloudflare_endpoint: string|null, cache_enabled: bool, cache_ttl: int, cache_service: string|null, ai_user_agents: list<string>} $config */
+        /** @var array{driver: string, cloudflare_endpoint: string|null, cloudflare_timeout: float, cloudflare_fallback: bool, cache_enabled: bool, cache_ttl: int, cache_service: string|null, ai_user_agents: list<string>} $config */
         $config        = $this->processConfiguration($configuration, $configs);
 
         $loader = new PhpFileLoader($container, new FileLocator(__DIR__ . '/../config'));
@@ -23,6 +23,8 @@ class SymfonyMarkdownResponseExtension extends Extension
 
         $container->setParameter('symfony_markdown_response.driver',              $config['driver']);
         $container->setParameter('symfony_markdown_response.cloudflare_endpoint', $config['cloudflare_endpoint']);
+        $container->setParameter('symfony_markdown_response.cloudflare_timeout',  $config['cloudflare_timeout']);
+        $container->setParameter('symfony_markdown_response.cloudflare_fallback', $config['cloudflare_fallback']);
         $container->setParameter('symfony_markdown_response.cache_enabled',       $config['cache_enabled']);
         $container->setParameter('symfony_markdown_response.cache_ttl',           $config['cache_ttl']);
         $container->setParameter('symfony_markdown_response.cache_service',       $config['cache_service']);

@@ -32,6 +32,8 @@ class ConfigurationTest extends TestCase
 
         self::assertSame('local', $config['driver']);
         self::assertNull($config['cloudflare_endpoint']);
+        self::assertSame(5.0, $config['cloudflare_timeout']);
+        self::assertTrue($config['cloudflare_fallback']);
         self::assertTrue($config['cache_enabled']);
         self::assertSame(3600, $config['cache_ttl']);
         self::assertNull($config['cache_service']);
@@ -79,6 +81,34 @@ class ConfigurationTest extends TestCase
         $config   = $this->processConfig(['cloudflare_endpoint' => $endpoint]);
 
         self::assertSame($endpoint, $config['cloudflare_endpoint']);
+    }
+
+    public function testCanSetCloudflareTimeout(): void
+    {
+        $config = $this->processConfig(['cloudflare_timeout' => 2.5]);
+
+        self::assertSame(2.5, $config['cloudflare_timeout']);
+    }
+
+    public function testCloudflareTimeoutAcceptsIntegers(): void
+    {
+        $config = $this->processConfig(['cloudflare_timeout' => 10]);
+
+        self::assertEqualsWithDelta(10.0, $config['cloudflare_timeout'], 0.0001);
+    }
+
+    public function testCloudflareTimeoutMustBePositive(): void
+    {
+        $this->expectException(InvalidConfigurationException::class);
+
+        $this->processConfig(['cloudflare_timeout' => 0]);
+    }
+
+    public function testCanDisableCloudflareFallback(): void
+    {
+        $config = $this->processConfig(['cloudflare_fallback' => false]);
+
+        self::assertFalse($config['cloudflare_fallback']);
     }
 
     public function testCanDisableCache(): void
@@ -137,11 +167,11 @@ class ConfigurationTest extends TestCase
 
     /**
      * @param array<string, mixed> $config
-     * @return array{driver: string, cloudflare_endpoint: string|null, cache_enabled: bool, cache_ttl: int, cache_service: string|null, ai_user_agents: list<string>}
+     * @return array{driver: string, cloudflare_endpoint: string|null, cloudflare_timeout: float, cloudflare_fallback: bool, cache_enabled: bool, cache_ttl: int, cache_service: string|null, ai_user_agents: list<string>}
      */
     private function processConfig(array $config): array
     {
-        /** @var array{driver: string, cloudflare_endpoint: string|null, cache_enabled: bool, cache_ttl: int, cache_service: string|null, ai_user_agents: list<string>} */
+        /** @var array{driver: string, cloudflare_endpoint: string|null, cloudflare_timeout: float, cloudflare_fallback: bool, cache_enabled: bool, cache_ttl: int, cache_service: string|null, ai_user_agents: list<string>} */
         return $this->processor->processConfiguration($this->configuration, [$config]);
     }
 }

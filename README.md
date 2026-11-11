@@ -106,6 +106,8 @@ Publish the configuration file (optional — all keys have defaults):
 symfony_markdown_response:
     driver: local               # "local" or "cloudflare"
     cloudflare_endpoint: ~      # required when driver is "cloudflare"
+    cloudflare_timeout: 5       # seconds
+    cloudflare_fallback: true   # use the local driver if Cloudflare fails
     cache_enabled: true
     cache_ttl: 3600             # seconds
     cache_service: ~            # PSR-6 service ID; defaults to cache.app
@@ -125,6 +127,8 @@ symfony_markdown_response:
 |---|---|---|---|
 | `driver` | `local\|cloudflare` | `local` | Conversion backend |
 | `cloudflare_endpoint` | `string\|null` | `null` | Cloudflare Workers AI URL (required for `cloudflare` driver) |
+| `cloudflare_timeout` | `float` | `5` | Seconds to wait for the Cloudflare endpoint before giving up |
+| `cloudflare_fallback` | `bool` | `true` | Convert with the `local` driver when the Cloudflare endpoint fails or times out |
 | `cache_enabled` | `bool` | `true` | Cache converted Markdown |
 | `cache_ttl` | `int` | `3600` | Cache TTL in seconds |
 | `cache_service` | `string\|null` | `null` | PSR-6 cache pool service ID; falls back to `cache.app` then `cache.system` |
@@ -147,6 +151,8 @@ symfony_markdown_response:
     driver: cloudflare
     cloudflare_endpoint: 'https://your-worker.example.workers.dev/to-markdown'
 ```
+
+If the endpoint returns an error, cannot be reached, or does not answer within `cloudflare_timeout` seconds, the bundle logs a warning (on the `markdown_response` channel when Monolog is installed) and converts the page with the `local` driver instead, so agents still receive Markdown. Set `cloudflare_fallback: false` to let the error propagate instead, for example while setting up the Worker.
 
 ---
 

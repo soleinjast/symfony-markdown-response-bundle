@@ -9,6 +9,26 @@ use Symfony\Component\Config\Definition\ConfigurationInterface;
 
 class Configuration implements ConfigurationInterface
 {
+    public const DEFAULT_AI_USER_AGENTS = [
+        'GPTBot',
+        'OAI-SearchBot',
+        'ChatGPT-User',
+        'ClaudeBot',
+        'Claude-SearchBot',
+        'Claude-User',
+        'anthropic-ai',
+        'Claude-Web',
+        'PerplexityBot',
+        'Perplexity-User',
+        'meta-externalagent',
+        'meta-externalfetcher',
+        'MistralAI-User',
+        'DuckAssistBot',
+        'Amazonbot',
+        'Bytespider',
+        'CCBot',
+    ];
+
     public function getConfigTreeBuilder(): TreeBuilder
     {
         $treeBuilder = new TreeBuilder('symfony_markdown_response');
@@ -48,16 +68,8 @@ class Configuration implements ConfigurationInterface
             ->end()
             ->arrayNode('ai_user_agents')
             ->scalarPrototype()->end()
-            ->defaultValue([
-                'GPTBot',
-                'ChatGPT-User',
-                'CCBot',
-                'anthropic-ai',
-                'Claude-Web',
-                'ClaudeBot',
-                'PerplexityBot',
-            ])
-            ->info('User agent substrings that trigger markdown responses.')
+            ->defaultValue(self::DEFAULT_AI_USER_AGENTS)
+            ->info('User agent substrings (case-insensitive) that trigger markdown responses.')
             ->end()
             ->end();
 

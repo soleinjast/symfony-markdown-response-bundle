@@ -89,11 +89,21 @@ The `Accept` header honours quality values: Markdown is served only when `text/m
 
 The `.md` suffix is stripped before routing so your route definitions remain unchanged. It only works on controllers that opted in: a `.md` request that resolves to any other controller returns `404 Not Found`, so the rest of your site does not get duplicate `.md` URLs serving HTML. The `_wants_markdown` attribute is set on the request to carry the intent forward to the response phase.
 
-Default User-Agent patterns:
+User-Agent patterns are matched case-insensitively as substrings. The defaults cover:
 
-```
-GPTBot, ChatGPT-User, CCBot, anthropic-ai, Claude-Web, ClaudeBot, PerplexityBot
-```
+| Operator | Patterns |
+|---|---|
+| OpenAI | `GPTBot`, `OAI-SearchBot`, `ChatGPT-User` |
+| Anthropic | `ClaudeBot`, `Claude-SearchBot`, `Claude-User`, `anthropic-ai`, `Claude-Web` |
+| Perplexity | `PerplexityBot`, `Perplexity-User` |
+| Meta | `meta-externalagent`, `meta-externalfetcher` |
+| Mistral | `MistralAI-User` |
+| DuckDuckGo | `DuckAssistBot` |
+| Amazon | `Amazonbot` |
+| ByteDance | `Bytespider` |
+| Common Crawl | `CCBot` |
+
+`Google-Extended` and `Applebot-Extended` are not included: they are `robots.txt` tokens only and never appear in a User-Agent header. Regular search engines (Googlebot, Bingbot, Applebot) are not matched.
 
 ---
 
@@ -111,14 +121,11 @@ symfony_markdown_response:
     cache_enabled: true
     cache_ttl: 3600             # seconds
     cache_service: ~            # PSR-6 service ID; defaults to cache.app
-    ai_user_agents:
+    ai_user_agents:             # replaces the default list (see "How Detection Works")
         - GPTBot
-        - ChatGPT-User
-        - CCBot
-        - anthropic-ai
-        - Claude-Web
         - ClaudeBot
         - PerplexityBot
+        # ...
 ```
 
 ### Configuration reference
@@ -132,7 +139,7 @@ symfony_markdown_response:
 | `cache_enabled` | `bool` | `true` | Cache converted Markdown |
 | `cache_ttl` | `int` | `3600` | Cache TTL in seconds |
 | `cache_service` | `string\|null` | `null` | PSR-6 cache pool service ID; falls back to `cache.app` then `cache.system` |
-| `ai_user_agents` | `string[]` | *(see above)* | User-Agent substrings that trigger Markdown responses |
+| `ai_user_agents` | `string[]` | *(see above)* | User-Agent substrings (case-insensitive) that trigger Markdown responses. Setting it replaces the defaults |
 
 ---
 

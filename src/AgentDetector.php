@@ -53,10 +53,10 @@ readonly class AgentDetector
 
     private function isAiUserAgent(Request $request): bool
     {
-        $userAgent = $request->headers->get('User-Agent', '');
+        $userAgent = (string) $request->headers->get('User-Agent', '');
 
         foreach ($this->aiUserAgents as $pattern) {
-            if (str_contains((string) $userAgent, $pattern)) {
+            if ($pattern !== '' && stripos($userAgent, $pattern) !== false) {
                 return true;
             }
         }

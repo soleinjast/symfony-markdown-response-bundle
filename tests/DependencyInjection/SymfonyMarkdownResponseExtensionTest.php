@@ -5,9 +5,13 @@ declare(strict_types=1);
 namespace Soleinjast\SymfonyMarkdownResponseBundle\Tests\DependencyInjection;
 
 use PHPUnit\Framework\TestCase;
+use Soleinjast\SymfonyMarkdownResponseBundle\Converter\CloudflareConverter;
+use Soleinjast\SymfonyMarkdownResponseBundle\Converter\FallbackConverter;
 use Soleinjast\SymfonyMarkdownResponseBundle\Converter\HtmlPreprocessorInterface;
+use Soleinjast\SymfonyMarkdownResponseBundle\Converter\LocalConverter;
 use Soleinjast\SymfonyMarkdownResponseBundle\DependencyInjection\SymfonyMarkdownResponseExtension;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
+use Symfony\Component\DependencyInjection\Reference;
 
 class SymfonyMarkdownResponseExtensionTest extends TestCase
 {
@@ -26,6 +30,8 @@ class SymfonyMarkdownResponseExtensionTest extends TestCase
 
         self::assertSame('local', $this->container->getParameter('symfony_markdown_response.driver'));
         self::assertNull($this->container->getParameter('symfony_markdown_response.cloudflare_endpoint'));
+        self::assertSame(5.0, $this->container->getParameter('symfony_markdown_response.cloudflare_timeout'));
+        self::assertTrue($this->container->getParameter('symfony_markdown_response.cloudflare_fallback'));
         self::assertTrue($this->container->getParameter('symfony_markdown_response.cache_enabled'));
         self::assertSame(3600, $this->container->getParameter('symfony_markdown_response.cache_ttl'));
         self::assertNull($this->container->getParameter('symfony_markdown_response.cache_service'));
@@ -54,6 +60,30 @@ class SymfonyMarkdownResponseExtensionTest extends TestCase
         $this->extension->load([['cloudflare_endpoint' => $endpoint]], $this->container);
 
         self::assertSame($endpoint, $this->container->getParameter('symfony_markdown_response.cloudflare_endpoint'));
+    }
+
+    public function testLoadSetsCloudflareTimeoutAndFallbackParameters(): void
+    {
+        $this->extension->load([['cloudflare_timeout' => 2.5, 'cloudflare_fallback' => false]], $this->container);
+
+        self::assertSame(2.5, $this->container->getParameter('symfony_markdown_response.cloudflare_timeout'));
+        self::assertFalse($this->container->getParameter('symfony_markdown_response.cloudflare_fallback'));
+    }
+
+    public function testRegistersCloudflareFallbackConverter(): void
+    {
+        $this->extension->load([[]], $this->container);
+
+        $definition = $this->container->getDefinition('symfony_markdown_response.cloudflare_with_fallback');
+
+        $primary    = $definition->getArgument('$primary');
+        $fallback   = $definition->getArgument('$fallback');
+
+        self::assertSame(FallbackConverter::class, $definition->getClass());
+        self::assertInstanceOf(Reference::class, $primary);
+        self::assertInstanceOf(Reference::class, $fallback);
+        self::assertSame(CloudflareConverter::class, (string) $primary);
+        self::assertSame(LocalConverter::class, (string) $fallback);
     }
 
     public function testLoadSetsCacheEnabledParameter(): void

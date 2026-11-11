@@ -59,9 +59,23 @@ class MarkdownResponsePassTest extends TestCase
         self::assertSame(LocalConverter::class, (string) $alias);
     }
 
+    public function testWiresCloudflareWithFallbackByDefault(): void
+    {
+        $this->container->setParameter('symfony_markdown_response.driver', 'cloudflare');
+        $this->container->setParameter('symfony_markdown_response.cloudflare_fallback', true);
+        $this->container->setParameter('symfony_markdown_response.cache_enabled', false);
+        $this->container->setParameter('symfony_markdown_response.cache_service', null);
+
+        $this->pass->process($this->container);
+
+        $alias = $this->container->getAlias('symfony_markdown_response.driver');
+        self::assertSame('symfony_markdown_response.cloudflare_with_fallback', (string) $alias);
+    }
+
     public function testWiresCloudflareDriver(): void
     {
         $this->container->setParameter('symfony_markdown_response.driver', 'cloudflare');
+        $this->container->setParameter('symfony_markdown_response.cloudflare_fallback', false);
         $this->container->setParameter('symfony_markdown_response.cache_enabled', false);
         $this->container->setParameter('symfony_markdown_response.cache_service', null);
 

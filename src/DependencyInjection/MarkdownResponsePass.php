@@ -24,7 +24,9 @@ class MarkdownResponsePass implements CompilerPassInterface
         $driver = $container->getParameter('symfony_markdown_response.driver');
 
         $driverServiceId = match ($driver) {
-            'cloudflare' => CloudflareConverter::class,
+            'cloudflare' => $container->getParameter('symfony_markdown_response.cloudflare_fallback')
+                ? 'symfony_markdown_response.cloudflare_with_fallback'
+                : CloudflareConverter::class,
             default      => LocalConverter::class,
         };
 

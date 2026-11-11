@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use Soleinjast\SymfonyMarkdownResponseBundle\AgentDetector;
 use Soleinjast\SymfonyMarkdownResponseBundle\Converter\CloudflareConverter;
+use Soleinjast\SymfonyMarkdownResponseBundle\Converter\FallbackConverter;
 use Soleinjast\SymfonyMarkdownResponseBundle\Converter\LocalConverter;
 use Soleinjast\SymfonyMarkdownResponseBundle\Converter\MarkdownConverter;
 use Soleinjast\SymfonyMarkdownResponseBundle\EventSubscriber\MarkdownResponseSubscriber;
@@ -20,7 +21,14 @@ return static function (ContainerConfigurator $container): void {
 
     $services->set(CloudflareConverter::class)
         ->arg('$httpClient', service('http_client'))
-        ->arg('$endpoint', param('symfony_markdown_response.cloudflare_endpoint'));
+        ->arg('$endpoint', param('symfony_markdown_response.cloudflare_endpoint'))
+        ->arg('$timeout', param('symfony_markdown_response.cloudflare_timeout'));
+
+    $services->set('symfony_markdown_response.cloudflare_with_fallback', FallbackConverter::class)
+        ->arg('$primary', service(CloudflareConverter::class))
+        ->arg('$fallback', service(LocalConverter::class))
+        ->arg('$logger', service('logger')->nullOnInvalid())
+        ->tag('monolog.logger', ['channel' => 'markdown_response']);
 
     $services->alias('symfony_markdown_response.driver', LocalConverter::class);
 

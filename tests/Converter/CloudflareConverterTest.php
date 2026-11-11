@@ -116,6 +116,38 @@ class CloudflareConverterTest extends TestCase
         $converter->convert('<p>Test</p>');
     }
 
+    public function testUsesFiveSecondTimeoutByDefault(): void
+    {
+        $response = $this->createMock(ResponseInterface::class);
+        $response->method('getStatusCode')->willReturn(200);
+        $response->method('getContent')->willReturn('# Output');
+
+        $this->httpClient
+            ->expects(self::once())
+            ->method('request')
+            ->with('POST', self::anything(), self::callback(static fn (array $options): bool => ($options['timeout'] ?? null) === 5.0
+                && ($options['max_duration'] ?? null) === 5.0))
+            ->willReturn($response);
+
+        (new CloudflareConverter($this->httpClient, 'https://example.com/convert'))->convert('<p>x</p>');
+    }
+
+    public function testUsesConfiguredTimeout(): void
+    {
+        $response = $this->createMock(ResponseInterface::class);
+        $response->method('getStatusCode')->willReturn(200);
+        $response->method('getContent')->willReturn('# Output');
+
+        $this->httpClient
+            ->expects(self::once())
+            ->method('request')
+            ->with('POST', self::anything(), self::callback(static fn (array $options): bool => ($options['timeout'] ?? null) === 1.5
+                && ($options['max_duration'] ?? null) === 1.5))
+            ->willReturn($response);
+
+        (new CloudflareConverter($this->httpClient, 'https://example.com/convert', 1.5))->convert('<p>x</p>');
+    }
+
     public function testEndpointUrlIsUsedInRequest(): void
     {
         $endpoint = 'https://api.cloudflare.example/markdown';

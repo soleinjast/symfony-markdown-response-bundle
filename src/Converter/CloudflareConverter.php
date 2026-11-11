@@ -12,6 +12,7 @@ readonly class CloudflareConverter implements ConverterInterface
     public function __construct(
         private HttpClientInterface $httpClient,
         private string              $endpoint,
+        private float               $timeout = 5.0,
     ) {
         if ($this->endpoint === '' || $this->endpoint === '0') {
             throw new RuntimeException(
@@ -23,8 +24,10 @@ readonly class CloudflareConverter implements ConverterInterface
     public function convert(string $html): string
     {
         $response = $this->httpClient->request('POST', $this->endpoint, [
-            'json'    => ['html' => $html],
-            'headers' => ['Accept' => 'text/plain'],
+            'json'         => ['html' => $html],
+            'headers'      => ['Accept' => 'text/plain'],
+            'timeout'      => $this->timeout,
+            'max_duration' => $this->timeout,
         ]);
 
         if ($response->getStatusCode() !== 200) {

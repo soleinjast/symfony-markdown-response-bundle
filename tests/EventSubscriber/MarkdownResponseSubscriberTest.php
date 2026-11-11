@@ -14,8 +14,10 @@ use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Symfony\Component\HttpFoundation\Cookie;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpKernel\Event\ControllerEvent;
 use Symfony\Component\HttpKernel\Event\RequestEvent;
 use Symfony\Component\HttpKernel\Event\ResponseEvent;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\HttpKernel\HttpKernelInterface;
 use Symfony\Component\HttpKernel\KernelEvents;
 
@@ -67,6 +69,15 @@ class MarkdownResponseSubscriberTest extends TestCase
         $config = $events[KernelEvents::RESPONSE];
         self::assertSame('onKernelResponse', $config[0]);
         self::assertSame(-10, $config[1]);
+    }
+
+    public function testControllerEventHasCorrectPriority(): void
+    {
+        $events = MarkdownResponseSubscriber::getSubscribedEvents();
+
+        $config = $events[KernelEvents::CONTROLLER];
+        self::assertSame('onKernelController', $config[0]);
+        self::assertSame(0, $config[1]);
     }
 
     // --- onKernelRequest tests ---
@@ -134,6 +145,34 @@ class MarkdownResponseSubscriberTest extends TestCase
         self::assertSame('/index', $request->getPathInfo());
     }
 
+    public function testOnKernelRequestKeepsQueryStringInRequestUri(): void
+    {
+        $request = Request::create('/page.md?foo=bar');
+        $event   = $this->createRequestEvent($request);
+
+        $this->subscriber->onKernelRequest($event);
+
+        self::assertSame('/page?foo=bar', $request->server->get('REQUEST_URI'));
+        self::assertSame('/page', $request->getPathInfo());
+    }
+
+    public function testOnKernelRequestPreservesBasePathOfAppInSubdirectory(): void
+    {
+        $request = Request::create('http://example.com/blog/docs/setup.md?page=2', 'GET', [], [], [], [
+            'SCRIPT_NAME'     => '/blog/index.php',
+            'SCRIPT_FILENAME' => '/var/www/blog/index.php',
+            'PHP_SELF'        => '/blog/index.php',
+        ]);
+        $event = $this->createRequestEvent($request);
+
+        $this->subscriber->onKernelRequest($event);
+
+        self::assertSame('/blog', $request->getBaseUrl());
+        self::assertSame('/docs/setup', $request->getPathInfo());
+        self::assertSame('http://example.com/blog/docs/setup?page=2', $request->getUri());
+        self::assertTrue($request->attributes->get('_wants_markdown'));
+    }
+
     public function testOnKernelRequestPreservesQueryString(): void
     {
         $request = Request::create('/page.md?foo=bar&baz=1');
@@ -143,6 +182,59 @@ class MarkdownResponseSubscriberTest extends TestCase
 
         self::assertSame('bar', $request->query->get('foo'));
         self::assertSame('1', $request->query->get('baz'));
+    }
+
+    // --- onKernelController tests ---
+
+    public function testMdRequestToRouteWithoutAttributeIsNotFound(): void
+    {
+        $request = $this->requestWithController(UnannotatedController::class . '::action');
+        $request->attributes->set('_wants_markdown', true);
+
+        $this->expectException(NotFoundHttpException::class);
+
+        $this->subscriber->onKernelController($this->createControllerEvent($request));
+    }
+
+    public function testMdRequestToDisabledActionIsNotFound(): void
+    {
+        $request = $this->requestWithController(AnnotatedController::class . '::disabledAction');
+        $request->attributes->set('_wants_markdown', true);
+
+        $this->expectException(NotFoundHttpException::class);
+
+        $this->subscriber->onKernelController($this->createControllerEvent($request));
+    }
+
+    public function testMdRequestToOptedInRouteIsAllowed(): void
+    {
+        $request = $this->requestWithController(AnnotatedController::class . '::annotatedAction');
+        $request->attributes->set('_wants_markdown', true);
+
+        $this->subscriber->onKernelController($this->createControllerEvent($request));
+
+        $this->expectNotToPerformAssertions();
+    }
+
+    public function testRegularRequestToRouteWithoutAttributeIsAllowed(): void
+    {
+        $request = $this->requestWithController(UnannotatedController::class . '::action');
+
+        $this->subscriber->onKernelController($this->createControllerEvent($request));
+
+        $this->expectNotToPerformAssertions();
+    }
+
+    public function testControllerCheckSkipsSubRequests(): void
+    {
+        $request = $this->requestWithController(UnannotatedController::class . '::action');
+        $request->attributes->set('_wants_markdown', true);
+
+        $this->subscriber->onKernelController(
+            $this->createControllerEvent($request, HttpKernelInterface::SUB_REQUEST),
+        );
+
+        $this->expectNotToPerformAssertions();
     }
 
     // --- onKernelResponse tests ---
@@ -523,6 +615,15 @@ class MarkdownResponseSubscriberTest extends TestCase
         $kernel = $this->createMock(HttpKernelInterface::class);
 
         return new RequestEvent($kernel, $request, $requestType);
+    }
+
+    private function createControllerEvent(
+        Request $request,
+        int $requestType = HttpKernelInterface::MAIN_REQUEST,
+    ): ControllerEvent {
+        $kernel = $this->createMock(HttpKernelInterface::class);
+
+        return new ControllerEvent($kernel, static fn (): Response => new Response(), $request, $requestType);
     }
 
     private function createResponseEvent(

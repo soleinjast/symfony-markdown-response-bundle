@@ -9,9 +9,12 @@ use Soleinjast\SymfonyMarkdownResponseBundle\AgentDetector;
 use Soleinjast\SymfonyMarkdownResponseBundle\Attribute\ProvideMarkdownResponse;
 use Soleinjast\SymfonyMarkdownResponseBundle\Converter\MarkdownConverter;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
+use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpKernel\Event\ControllerEvent;
 use Symfony\Component\HttpKernel\Event\RequestEvent;
 use Symfony\Component\HttpKernel\Event\ResponseEvent;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\HttpKernel\KernelEvents;
 
 readonly class MarkdownResponseSubscriber implements EventSubscriberInterface
@@ -28,8 +31,9 @@ readonly class MarkdownResponseSubscriber implements EventSubscriberInterface
     public static function getSubscribedEvents(): array
     {
         return [
-            KernelEvents::REQUEST  => ['onKernelRequest', 100],
-            KernelEvents::RESPONSE => ['onKernelResponse', -10],
+            KernelEvents::REQUEST    => ['onKernelRequest', 100],
+            KernelEvents::CONTROLLER => ['onKernelController', 0],
+            KernelEvents::RESPONSE   => ['onKernelResponse', -10],
         ];
     }
 
@@ -39,21 +43,50 @@ readonly class MarkdownResponseSubscriber implements EventSubscriberInterface
             return;
         }
 
-        $request  = $event->getRequest();
-        $pathInfo = $request->getPathInfo();
+        $request = $event->getRequest();
 
-        if (str_ends_with($pathInfo, '.md')) {
-            $newPath = substr($pathInfo, 0, -3);
-            $request->initialize(
-                $request->query->all(),
-                $request->request->all(),
-                $request->attributes->all(),
-                $request->cookies->all(),
-                $request->files->all(),
-                array_merge($request->server->all(), ['REQUEST_URI' => $newPath]),
-                $request->getContent()
-            );
-            $request->attributes->set('_wants_markdown', true);
+        if (! str_ends_with($request->getPathInfo(), '.md')) {
+            return;
+        }
+
+        $requestUri = $request->server->get('REQUEST_URI');
+        if (! is_string($requestUri)) {
+            return;
+        }
+
+        $parts = explode('?', $requestUri, 2);
+        if (! str_ends_with($parts[0], '.md')) {
+            return;
+        }
+
+        $parts[0] = substr($parts[0], 0, -3);
+
+        $request->initialize(
+            $request->query->all(),
+            $request->request->all(),
+            $request->attributes->all(),
+            $request->cookies->all(),
+            $request->files->all(),
+            array_merge($request->server->all(), ['REQUEST_URI' => implode('?', $parts)]),
+            $request->getContent()
+        );
+        $request->attributes->set('_wants_markdown', true);
+    }
+
+    public function onKernelController(ControllerEvent $event): void
+    {
+        if (! $event->isMainRequest()) {
+            return;
+        }
+
+        $request = $event->getRequest();
+
+        if (! $request->attributes->getBoolean('_wants_markdown')) {
+            return;
+        }
+
+        if (! $this->isMarkdownEnabled($request)) {
+            throw new NotFoundHttpException(sprintf('No Markdown version is available for "%s".', $request->getPathInfo()));
         }
     }
 
@@ -69,7 +102,7 @@ readonly class MarkdownResponseSubscriber implements EventSubscriberInterface
             return;
         }
 
-        if (! $this->isMarkdownEnabled($event)) {
+        if (! $this->isMarkdownEnabled($event->getRequest())) {
             return;
         }
 
@@ -112,9 +145,9 @@ readonly class MarkdownResponseSubscriber implements EventSubscriberInterface
         }
     }
 
-    private function isMarkdownEnabled(ResponseEvent $event): bool
+    private function isMarkdownEnabled(Request $request): bool
     {
-        $controller = $event->getRequest()->attributes->get('_controller');
+        $controller = $request->attributes->get('_controller');
 
         if (! is_string($controller) && ! is_array($controller)) {
             return false;

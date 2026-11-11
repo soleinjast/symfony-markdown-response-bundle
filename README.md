@@ -87,7 +87,7 @@ A request is considered to want Markdown if **any** of the following is true:
 
 The `Accept` header honours quality values: Markdown is served only when `text/markdown` has a `q` above 0 and at least as high as `text/html`. For example, `text/html, text/markdown;q=0.5` gets HTML and `text/markdown;q=0` never gets Markdown. Wildcards such as `*/*` do not count as asking for Markdown.
 
-The `.md` suffix is stripped before routing so your route definitions remain unchanged. The `_wants_markdown` attribute is set on the request to carry the intent forward to the response phase.
+The `.md` suffix is stripped before routing so your route definitions remain unchanged. It only works on controllers that opted in: a `.md` request that resolves to any other controller returns `404 Not Found`, so the rest of your site does not get duplicate `.md` URLs serving HTML. The `_wants_markdown` attribute is set on the request to carry the intent forward to the response phase.
 
 Default User-Agent patterns:
 

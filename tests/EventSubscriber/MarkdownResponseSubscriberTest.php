@@ -11,6 +11,7 @@ use Soleinjast\SymfonyMarkdownResponseBundle\Attribute\ProvideMarkdownResponse;
 use Soleinjast\SymfonyMarkdownResponseBundle\Converter\MarkdownConverter;
 use Soleinjast\SymfonyMarkdownResponseBundle\EventSubscriber\MarkdownResponseSubscriber;
 use Soleinjast\SymfonyMarkdownResponseBundle\FrontMatter\FrontMatterGenerator;
+use Soleinjast\SymfonyMarkdownResponseBundle\Html\AbsoluteUrlRewriter;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Symfony\Component\HttpFoundation\Cookie;
 use Symfony\Component\HttpFoundation\Request;
@@ -651,6 +652,46 @@ class MarkdownResponseSubscriberTest extends TestCase
             "---\nurl: \"https://example.com/docs\"\n---\n\n    indented code\n\n# Hello",
             $event->getResponse()->getContent(),
         );
+    }
+
+    public function testConvertsHtmlWithAbsoluteUrlsWhenRewriterIsConfigured(): void
+    {
+        $this->detector->method('wantsMarkdown')->willReturn(true);
+        $this->converter->expects(self::once())
+            ->method('convert')
+            ->with('<a href="https://example.com/docs/setup">Setup</a>')
+            ->willReturn('[Setup](https://example.com/docs/setup)');
+
+        $subscriber = new MarkdownResponseSubscriber($this->converter, $this->detector, null, new AbsoluteUrlRewriter());
+        $request    = Request::create('https://example.com/docs/install');
+        $request->attributes->set('_controller', AnnotatedController::class . '::annotatedAction');
+
+        $event = $this->createResponseEvent(
+            new Response('<a href="setup">Setup</a>', 200, ['Content-Type' => 'text/html']),
+            $request,
+        );
+
+        $subscriber->onKernelResponse($event);
+
+        self::assertSame('[Setup](https://example.com/docs/setup)', $event->getResponse()->getContent());
+    }
+
+    public function testConvertsHtmlUnchangedWithoutRewriter(): void
+    {
+        $this->detector->method('wantsMarkdown')->willReturn(true);
+        $this->converter->expects(self::once())
+            ->method('convert')
+            ->with('<a href="setup">Setup</a>')
+            ->willReturn('[Setup](setup)');
+
+        $event = $this->createResponseEvent(
+            new Response('<a href="setup">Setup</a>', 200, ['Content-Type' => 'text/html']),
+            $this->requestWithController(AnnotatedController::class . '::annotatedAction'),
+        );
+
+        $this->subscriber->onKernelResponse($event);
+
+        self::assertSame('[Setup](setup)', $event->getResponse()->getContent());
     }
 
     public function testDoesNotPrependFrontMatterWithoutGenerator(): void

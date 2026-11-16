@@ -9,6 +9,7 @@ use Soleinjast\SymfonyMarkdownResponseBundle\AgentDetector;
 use Soleinjast\SymfonyMarkdownResponseBundle\Attribute\ProvideMarkdownResponse;
 use Soleinjast\SymfonyMarkdownResponseBundle\Converter\MarkdownConverter;
 use Soleinjast\SymfonyMarkdownResponseBundle\FrontMatter\FrontMatterGenerator;
+use Soleinjast\SymfonyMarkdownResponseBundle\Html\AbsoluteUrlRewriter;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -28,6 +29,7 @@ readonly class MarkdownResponseSubscriber implements EventSubscriberInterface
         private MarkdownConverter $converter,
         private AgentDetector     $detector,
         private ?FrontMatterGenerator $frontMatter = null,
+        private ?AbsoluteUrlRewriter  $urlRewriter = null,
     ) {}
 
     public static function getSubscribedEvents(): array
@@ -123,7 +125,11 @@ readonly class MarkdownResponseSubscriber implements EventSubscriberInterface
             return;
         }
 
-        $markdown = $this->converter->convert($html);
+        $markdown = $this->converter->convert(
+            $this->urlRewriter instanceof AbsoluteUrlRewriter
+                ? $this->urlRewriter->rewrite($html, $request->getUri())
+                : $html,
+        );
         if ($this->frontMatter instanceof FrontMatterGenerator) {
             // Removed nodes (nav, header whitespace) can leave blank lines at the top.
             $markdown = $this->frontMatter->generate($html, $request)

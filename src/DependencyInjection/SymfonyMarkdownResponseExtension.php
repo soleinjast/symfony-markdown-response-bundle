@@ -16,7 +16,7 @@ class SymfonyMarkdownResponseExtension extends Extension
     public function load(array $configs, ContainerBuilder $container): void
     {
         $configuration = new Configuration();
-        /** @var array{driver: string, cloudflare_endpoint: string|null, cloudflare_timeout: float, cloudflare_fallback: bool, cache_enabled: bool, cache_ttl: int, cache_service: string|null, front_matter: bool, ai_user_agents: list<string>} $config */
+        /** @var array{driver: string, cloudflare_endpoint: string|null, cloudflare_timeout: float, cloudflare_fallback: bool, cache_enabled: bool, cache_ttl: int, cache_service: string|null, front_matter: bool, absolute_urls: bool, ai_user_agents: list<string>} $config */
         $config        = $this->processConfiguration($configuration, $configs);
 
         $loader = new PhpFileLoader($container, new FileLocator(__DIR__ . '/../config'));
@@ -30,10 +30,15 @@ class SymfonyMarkdownResponseExtension extends Extension
         $container->setParameter('symfony_markdown_response.cache_ttl',           $config['cache_ttl']);
         $container->setParameter('symfony_markdown_response.cache_service',       $config['cache_service']);
         $container->setParameter('symfony_markdown_response.front_matter',        $config['front_matter']);
+        $container->setParameter('symfony_markdown_response.absolute_urls',       $config['absolute_urls']);
         $container->setParameter('symfony_markdown_response.ai_user_agents',      $config['ai_user_agents']);
 
         if (! $config['front_matter']) {
             $container->getDefinition(MarkdownResponseSubscriber::class)->setArgument('$frontMatter', null);
+        }
+
+        if (! $config['absolute_urls']) {
+            $container->getDefinition(MarkdownResponseSubscriber::class)->setArgument('$urlRewriter', null);
         }
 
         $container->registerForAutoconfiguration(HtmlPreprocessorInterface::class)

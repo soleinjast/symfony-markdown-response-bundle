@@ -122,6 +122,7 @@ symfony_markdown_response:
     cache_ttl: 3600             # seconds
     cache_service: ~            # PSR-6 service ID; defaults to cache.app
     front_matter: true          # prepend title, description, url and lang as YAML
+    absolute_urls: true         # rewrite relative link and image URLs to absolute ones
     ai_user_agents:             # replaces the default list (see "How Detection Works")
         - GPTBot
         - ClaudeBot
@@ -141,6 +142,7 @@ symfony_markdown_response:
 | `cache_ttl` | `int` | `3600` | Cache TTL in seconds |
 | `cache_service` | `string\|null` | `null` | PSR-6 cache pool service ID; falls back to `cache.app` then `cache.system` |
 | `front_matter` | `bool` | `true` | Prepend YAML front matter built from the page's `<head>` (see [Front Matter](#front-matter)) |
+| `absolute_urls` | `bool` | `true` | Rewrite relative link and image URLs to absolute ones (see [Absolute URLs](#absolute-urls)) |
 | `ai_user_agents` | `string[]` | *(see above)* | User-Agent substrings (case-insensitive) that trigger Markdown responses. Setting it replaces the defaults |
 
 ---
@@ -193,6 +195,28 @@ Fields with no value are left out; `url` is always present. Front matter is adde
 ```yaml
 symfony_markdown_response:
     front_matter: false
+```
+
+---
+
+## Absolute URLs
+
+A relative link such as `[Setup](/docs/setup)` is meaningless once an agent reads the Markdown outside your site. Before conversion, the bundle resolves the `href` of every `<a>` and the `src` of every `<img>` against the page URL:
+
+| In the HTML (page `https://example.com/docs/install`) | In the Markdown |
+|---|---|
+| `<a href="/docs/setup">` | `https://example.com/docs/setup` |
+| `<a href="faq">` | `https://example.com/docs/faq` |
+| `<img src="../img/logo.png">` | `https://example.com/img/logo.png` |
+| `<img src="//cdn.example.com/a.png">` | `https://cdn.example.com/a.png` |
+| `<a href="#usage">` | `https://example.com/docs/install#usage` |
+| `<a href="mailto:hi@example.com">` | unchanged |
+
+Resolution follows RFC 3986 and honours a `<base href>` element. It runs before conversion, so it works with both drivers. To turn it off:
+
+```yaml
+symfony_markdown_response:
+    absolute_urls: false
 ```
 
 ---

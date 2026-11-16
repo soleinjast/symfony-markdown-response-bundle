@@ -12,6 +12,7 @@ use Soleinjast\SymfonyMarkdownResponseBundle\Converter\LocalConverter;
 use Soleinjast\SymfonyMarkdownResponseBundle\DependencyInjection\SymfonyMarkdownResponseExtension;
 use Soleinjast\SymfonyMarkdownResponseBundle\EventSubscriber\MarkdownResponseSubscriber;
 use Soleinjast\SymfonyMarkdownResponseBundle\FrontMatter\FrontMatterGenerator;
+use Soleinjast\SymfonyMarkdownResponseBundle\Html\AbsoluteUrlRewriter;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Reference;
 
@@ -149,6 +150,25 @@ class SymfonyMarkdownResponseExtensionTest extends TestCase
 
         self::assertFalse($this->container->getParameter('symfony_markdown_response.front_matter'));
         self::assertNull($this->container->getDefinition(MarkdownResponseSubscriber::class)->getArgument('$frontMatter'));
+    }
+
+    public function testWiresAbsoluteUrlRewriterByDefault(): void
+    {
+        $this->extension->load([[]], $this->container);
+
+        self::assertTrue($this->container->getParameter('symfony_markdown_response.absolute_urls'));
+
+        $argument = $this->container->getDefinition(MarkdownResponseSubscriber::class)->getArgument('$urlRewriter');
+        self::assertInstanceOf(Reference::class, $argument);
+        self::assertSame(AbsoluteUrlRewriter::class, (string) $argument);
+    }
+
+    public function testDisablesAbsoluteUrlRewriter(): void
+    {
+        $this->extension->load([['absolute_urls' => false]], $this->container);
+
+        self::assertFalse($this->container->getParameter('symfony_markdown_response.absolute_urls'));
+        self::assertNull($this->container->getDefinition(MarkdownResponseSubscriber::class)->getArgument('$urlRewriter'));
     }
 
     public function testExtensionAlias(): void

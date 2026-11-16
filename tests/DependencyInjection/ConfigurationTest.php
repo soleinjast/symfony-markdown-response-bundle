@@ -38,6 +38,7 @@ class ConfigurationTest extends TestCase
         self::assertSame(3600, $config['cache_ttl']);
         self::assertNull($config['cache_service']);
         self::assertTrue($config['front_matter']);
+        self::assertTrue($config['absolute_urls']);
         self::assertIsArray($config['ai_user_agents']);
         self::assertNotEmpty($config['ai_user_agents']);
     }
@@ -140,6 +141,13 @@ class ConfigurationTest extends TestCase
         self::assertFalse($config['front_matter']);
     }
 
+    public function testCanDisableAbsoluteUrls(): void
+    {
+        $config = $this->processConfig(['absolute_urls' => false]);
+
+        self::assertFalse($config['absolute_urls']);
+    }
+
     public function testCanOverrideAiUserAgents(): void
     {
         $agents = ['MyBot', 'AnotherBot'];
@@ -175,11 +183,11 @@ class ConfigurationTest extends TestCase
 
     /**
      * @param array<string, mixed> $config
-     * @return array{driver: string, cloudflare_endpoint: string|null, cloudflare_timeout: float, cloudflare_fallback: bool, cache_enabled: bool, cache_ttl: int, cache_service: string|null, front_matter: bool, ai_user_agents: list<string>}
+     * @return array{driver: string, cloudflare_endpoint: string|null, cloudflare_timeout: float, cloudflare_fallback: bool, cache_enabled: bool, cache_ttl: int, cache_service: string|null, front_matter: bool, absolute_urls: bool, ai_user_agents: list<string>}
      */
     private function processConfig(array $config): array
     {
-        /** @var array{driver: string, cloudflare_endpoint: string|null, cloudflare_timeout: float, cloudflare_fallback: bool, cache_enabled: bool, cache_ttl: int, cache_service: string|null, front_matter: bool, ai_user_agents: list<string>} */
+        /** @var array{driver: string, cloudflare_endpoint: string|null, cloudflare_timeout: float, cloudflare_fallback: bool, cache_enabled: bool, cache_ttl: int, cache_service: string|null, front_matter: bool, absolute_urls: bool, ai_user_agents: list<string>} */
         return $this->processor->processConfiguration($this->configuration, [$config]);
     }
 }

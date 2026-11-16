@@ -8,6 +8,7 @@ use ReflectionClass;
 use Soleinjast\SymfonyMarkdownResponseBundle\AgentDetector;
 use Soleinjast\SymfonyMarkdownResponseBundle\Attribute\ProvideMarkdownResponse;
 use Soleinjast\SymfonyMarkdownResponseBundle\Converter\MarkdownConverter;
+use Soleinjast\SymfonyMarkdownResponseBundle\FrontMatter\FrontMatterGenerator;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -26,6 +27,7 @@ readonly class MarkdownResponseSubscriber implements EventSubscriberInterface
     public function __construct(
         private MarkdownConverter $converter,
         private AgentDetector     $detector,
+        private ?FrontMatterGenerator $frontMatter = null,
     ) {}
 
     public static function getSubscribedEvents(): array
@@ -121,7 +123,14 @@ readonly class MarkdownResponseSubscriber implements EventSubscriberInterface
             return;
         }
 
-        $response->setContent($this->converter->convert($html));
+        $markdown = $this->converter->convert($html);
+        if ($this->frontMatter instanceof FrontMatterGenerator) {
+            // Removed nodes (nav, header whitespace) can leave blank lines at the top.
+            $markdown = $this->frontMatter->generate($html, $request)
+                . preg_replace('/\A(?:[ \t]*\R)+/', '', $markdown);
+        }
+
+        $response->setContent($markdown);
         $response->headers->set('Content-Type', 'text/markdown; charset=UTF-8');
         foreach (self::BODY_SPECIFIC_HEADERS as $header) {
             $response->headers->remove($header);

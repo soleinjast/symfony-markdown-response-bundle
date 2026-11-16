@@ -121,6 +121,7 @@ symfony_markdown_response:
     cache_enabled: true
     cache_ttl: 3600             # seconds
     cache_service: ~            # PSR-6 service ID; defaults to cache.app
+    front_matter: true          # prepend title, description, url and lang as YAML
     ai_user_agents:             # replaces the default list (see "How Detection Works")
         - GPTBot
         - ClaudeBot
@@ -139,6 +140,7 @@ symfony_markdown_response:
 | `cache_enabled` | `bool` | `true` | Cache converted Markdown |
 | `cache_ttl` | `int` | `3600` | Cache TTL in seconds |
 | `cache_service` | `string\|null` | `null` | PSR-6 cache pool service ID; falls back to `cache.app` then `cache.system` |
+| `front_matter` | `bool` | `true` | Prepend YAML front matter built from the page's `<head>` (see [Front Matter](#front-matter)) |
 | `ai_user_agents` | `string[]` | *(see above)* | User-Agent substrings (case-insensitive) that trigger Markdown responses. Setting it replaces the defaults |
 
 ---
@@ -160,6 +162,38 @@ symfony_markdown_response:
 ```
 
 If the endpoint returns an error, cannot be reached, or does not answer within `cloudflare_timeout` seconds, the bundle logs a warning (on the `markdown_response` channel when Monolog is installed) and converts the page with the `local` driver instead, so agents still receive Markdown. Set `cloudflare_fallback: false` to let the error propagate instead, for example while setting up the Worker.
+
+---
+
+## Front Matter
+
+`<head>` is stripped before conversion, so the bundle reads the page's metadata first and puts it at the top of the Markdown as YAML front matter:
+
+```markdown
+---
+title: "Getting Started"
+description: "How to install and configure the bundle."
+url: "https://example.com/docs/getting-started"
+lang: "en"
+---
+
+# Getting Started
+...
+```
+
+| Field | Source |
+|---|---|
+| `title` | `<title>`, falling back to `<meta property="og:title">` |
+| `description` | `<meta name="description">`, falling back to `<meta property="og:description">` |
+| `url` | `<link rel="canonical">` (absolute, or root-relative resolved against the current host), falling back to the request URL |
+| `lang` | `<html lang>` |
+
+Fields with no value are left out; `url` is always present. Front matter is added with both drivers. To turn it off:
+
+```yaml
+symfony_markdown_response:
+    front_matter: false
+```
 
 ---
 

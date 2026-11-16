@@ -27,8 +27,7 @@ class LocalConverterTest extends TestCase
         $result = $this->converter->convert('<h1>Hello World</h1>');
 
         self::assertStringContainsString('Hello World', $result);
-        // league/html-to-markdown uses setext style by default (=== underline) for h1
-        self::assertMatchesRegularExpression('/Hello World\s*\n[=\-]+|# Hello World/', $result);
+        self::assertSame('# Hello World', $result);
     }
 
     public function testConvertsParagraphToMarkdown(): void
@@ -157,7 +156,28 @@ class LocalConverterTest extends TestCase
         $result = $this->converter->convert('<h2>Subheading</h2>');
 
         self::assertStringContainsString('Subheading', $result);
-        // league/html-to-markdown uses setext style (--- underline) for h2 by default
-        self::assertMatchesRegularExpression('/Subheading\s*\n[-]+|## Subheading/', $result);
+        self::assertSame('## Subheading', $result);
+    }
+
+    public function testConvertsTableToMarkdown(): void
+    {
+        $html = '<table>'
+            . '<thead><tr><th>Name</th><th>Age</th></tr></thead>'
+            . '<tbody><tr><td>Ann</td><td>30</td></tr><tr><td>Bob</td><td>42</td></tr></tbody>'
+            . '</table>';
+
+        $result = $this->converter->convert($html);
+
+        self::assertSame(
+            "| Name | Age |\n|---|---|\n| Ann | 30 |\n| Bob | 42 |",
+            $result,
+        );
+    }
+
+    public function testConvertsTableWithoutHeaderToMarkdown(): void
+    {
+        $result = $this->converter->convert('<table><tr><td>A</td><td>B</td></tr></table>');
+
+        self::assertStringContainsString('| A | B |', $result);
     }
 }

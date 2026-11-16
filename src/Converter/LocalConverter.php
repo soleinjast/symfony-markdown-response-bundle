@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Soleinjast\SymfonyMarkdownResponseBundle\Converter;
 
+use League\HTMLToMarkdown\Converter\TableConverter;
 use League\HTMLToMarkdown\HtmlConverter;
 
 readonly class LocalConverter implements ConverterInterface
@@ -14,7 +15,9 @@ readonly class LocalConverter implements ConverterInterface
         $this->converter = new HtmlConverter([
             'strip_tags'   => true,
             'remove_nodes' => 'head script style nav footer aside',
+            'header_style' => 'atx',
         ]);
+        $this->converter->getEnvironment()->addConverter(new TableConverter());
     }
 
     public function convert(string $html): string

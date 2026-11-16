@@ -8,6 +8,7 @@ use Soleinjast\SymfonyMarkdownResponseBundle\Converter\FallbackConverter;
 use Soleinjast\SymfonyMarkdownResponseBundle\Converter\LocalConverter;
 use Soleinjast\SymfonyMarkdownResponseBundle\Converter\MarkdownConverter;
 use Soleinjast\SymfonyMarkdownResponseBundle\EventSubscriber\MarkdownResponseSubscriber;
+use Soleinjast\SymfonyMarkdownResponseBundle\FrontMatter\FrontMatterGenerator;
 use Symfony\Component\DependencyInjection\Loader\Configurator\ContainerConfigurator;
 
 use function Symfony\Component\DependencyInjection\Loader\Configurator\param;
@@ -42,7 +43,10 @@ return static function (ContainerConfigurator $container): void {
     $services->set(AgentDetector::class)
         ->arg('$aiUserAgents', param('symfony_markdown_response.ai_user_agents'));
 
+    $services->set(FrontMatterGenerator::class);
+
     $services->set(MarkdownResponseSubscriber::class)
         ->autowire()
+        ->arg('$frontMatter', service(FrontMatterGenerator::class))
         ->tag('kernel.event_subscriber');
 };

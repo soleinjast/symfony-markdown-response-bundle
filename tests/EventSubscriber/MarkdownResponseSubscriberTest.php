@@ -10,6 +10,7 @@ use Soleinjast\SymfonyMarkdownResponseBundle\AgentDetector;
 use Soleinjast\SymfonyMarkdownResponseBundle\Attribute\ProvideMarkdownResponse;
 use Soleinjast\SymfonyMarkdownResponseBundle\Converter\MarkdownConverter;
 use Soleinjast\SymfonyMarkdownResponseBundle\EventSubscriber\MarkdownResponseSubscriber;
+use Soleinjast\SymfonyMarkdownResponseBundle\FrontMatter\FrontMatterGenerator;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Symfony\Component\HttpFoundation\Cookie;
 use Symfony\Component\HttpFoundation\Request;
@@ -606,6 +607,81 @@ class MarkdownResponseSubscriberTest extends TestCase
         );
 
         $this->subscriber->onKernelResponse($event);
+    }
+
+    public function testPrependsFrontMatterWhenGeneratorIsConfigured(): void
+    {
+        $this->detector->method('wantsMarkdown')->willReturn(true);
+        $this->converter->method('convert')->willReturn('# Hello');
+
+        $subscriber = new MarkdownResponseSubscriber($this->converter, $this->detector, new FrontMatterGenerator());
+        $request    = Request::create('https://example.com/docs');
+        $request->attributes->set('_controller', AnnotatedController::class . '::annotatedAction');
+
+        $event = $this->createResponseEvent(
+            new Response('<html><head><title>Docs</title></head><body><h1>Hello</h1></body></html>', 200, ['Content-Type' => 'text/html']),
+            $request,
+        );
+
+        $subscriber->onKernelResponse($event);
+
+        self::assertSame(
+            "---\ntitle: \"Docs\"\nurl: \"https://example.com/docs\"\n---\n\n# Hello",
+            $event->getResponse()->getContent(),
+        );
+    }
+
+    public function testRemovesLeadingBlankLinesAfterFrontMatter(): void
+    {
+        $this->detector->method('wantsMarkdown')->willReturn(true);
+        $this->converter->method('convert')->willReturn("  \n\n\t\n    indented code\n\n# Hello");
+
+        $subscriber = new MarkdownResponseSubscriber($this->converter, $this->detector, new FrontMatterGenerator());
+        $request    = Request::create('https://example.com/docs');
+        $request->attributes->set('_controller', AnnotatedController::class . '::annotatedAction');
+
+        $event = $this->createResponseEvent(
+            new Response('<p>Hello</p>', 200, ['Content-Type' => 'text/html']),
+            $request,
+        );
+
+        $subscriber->onKernelResponse($event);
+
+        self::assertSame(
+            "---\nurl: \"https://example.com/docs\"\n---\n\n    indented code\n\n# Hello",
+            $event->getResponse()->getContent(),
+        );
+    }
+
+    public function testDoesNotPrependFrontMatterWithoutGenerator(): void
+    {
+        $this->detector->method('wantsMarkdown')->willReturn(true);
+        $this->converter->method('convert')->willReturn('# Hello');
+
+        $event = $this->createResponseEvent(
+            new Response('<html><head><title>Docs</title></head><body><h1>Hello</h1></body></html>', 200, ['Content-Type' => 'text/html']),
+            $this->requestWithController(AnnotatedController::class . '::annotatedAction'),
+        );
+
+        $this->subscriber->onKernelResponse($event);
+
+        self::assertSame('# Hello', $event->getResponse()->getContent());
+    }
+
+    public function testDoesNotPrependFrontMatterToHtmlResponses(): void
+    {
+        $this->detector->method('wantsMarkdown')->willReturn(false);
+
+        $html       = '<html><head><title>Docs</title></head><body></body></html>';
+        $subscriber = new MarkdownResponseSubscriber($this->converter, $this->detector, new FrontMatterGenerator());
+        $event      = $this->createResponseEvent(
+            new Response($html, 200, ['Content-Type' => 'text/html']),
+            $this->requestWithController(AnnotatedController::class . '::annotatedAction'),
+        );
+
+        $subscriber->onKernelResponse($event);
+
+        self::assertSame($html, $event->getResponse()->getContent());
     }
 
     private function createRequestEvent(

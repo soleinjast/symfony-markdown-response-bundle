@@ -10,6 +10,8 @@ use Soleinjast\SymfonyMarkdownResponseBundle\Converter\FallbackConverter;
 use Soleinjast\SymfonyMarkdownResponseBundle\Converter\HtmlPreprocessorInterface;
 use Soleinjast\SymfonyMarkdownResponseBundle\Converter\LocalConverter;
 use Soleinjast\SymfonyMarkdownResponseBundle\DependencyInjection\SymfonyMarkdownResponseExtension;
+use Soleinjast\SymfonyMarkdownResponseBundle\EventSubscriber\MarkdownResponseSubscriber;
+use Soleinjast\SymfonyMarkdownResponseBundle\FrontMatter\FrontMatterGenerator;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Reference;
 
@@ -127,6 +129,26 @@ class SymfonyMarkdownResponseExtensionTest extends TestCase
         $tags     = $childDef->getTags();
 
         self::assertArrayHasKey('symfony_markdown_response.html_preprocessor', $tags);
+    }
+
+    public function testWiresFrontMatterGeneratorByDefault(): void
+    {
+        $this->extension->load([[]], $this->container);
+
+        self::assertTrue($this->container->getParameter('symfony_markdown_response.front_matter'));
+        self::assertTrue($this->container->hasDefinition(FrontMatterGenerator::class));
+
+        $argument = $this->container->getDefinition(MarkdownResponseSubscriber::class)->getArgument('$frontMatter');
+        self::assertInstanceOf(Reference::class, $argument);
+        self::assertSame(FrontMatterGenerator::class, (string) $argument);
+    }
+
+    public function testDisablesFrontMatterGenerator(): void
+    {
+        $this->extension->load([['front_matter' => false]], $this->container);
+
+        self::assertFalse($this->container->getParameter('symfony_markdown_response.front_matter'));
+        self::assertNull($this->container->getDefinition(MarkdownResponseSubscriber::class)->getArgument('$frontMatter'));
     }
 
     public function testExtensionAlias(): void

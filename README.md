@@ -147,7 +147,7 @@ symfony_markdown_response:
 
 ### `local` (default)
 
-Uses [`league/html-to-markdown`](https://github.com/thephpleague/html-to-markdown). Conversion happens in-process with no external dependencies. The following HTML nodes are stripped before conversion: `head`, `script`, `style`, `nav`, `footer`, `aside`.
+Uses [`league/html-to-markdown`](https://github.com/thephpleague/html-to-markdown). Conversion happens in-process with no external dependencies. The following HTML nodes are stripped before conversion: `head`, `script`, `style`, `nav`, `footer`, `aside`. Headings use ATX style (`# Title`, `## Section`), and HTML tables are converted to Markdown pipe tables.
 
 ### `cloudflare`
 
